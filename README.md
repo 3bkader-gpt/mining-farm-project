@@ -45,6 +45,7 @@
 - 🔄 **Auto-Reporting** - Workers automatically report to central server
 - 📈 **Profitability Calculator** - Compare different cryptocurrencies
 - 🛠️ **Easy Setup** - Simple installation and configuration
+- 🔒 **Secure** - Environment variables for sensitive data
 
 ---
 
@@ -131,13 +132,13 @@ cd mining-farm-project
 # 2️⃣ Install Python dependencies
 pip install -r requirements.txt
 
-# 3️⃣ Setup MySQL database
+# 3️⃣ Setup environment variables
+cp .env.example .env
+# Edit .env file with your configuration
+
+# 4️⃣ Setup MySQL database
 sudo mysql_secure_installation
 # Create database (see Configuration section)
-
-# 4️⃣ Configure environment variables
-# Update central_server.py with your MySQL credentials
-# Update telegram_bot.py with your bot token
 
 # 5️⃣ Start central server
 python central_server.py
@@ -150,6 +151,37 @@ python worker_script.py
 
 ## ⚙️ Configuration
 
+### **Environment Variables Setup**
+
+1. **Copy the example file:**
+```bash
+cp .env.example .env
+```
+
+2. **Edit `.env` file with your settings:**
+```env
+# Central Server Configuration
+CENTRAL_SERVER_URL=http://your-server-ip:5002
+SERVER_HOST=0.0.0.0
+SERVER_PORT=5002
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=mining_user
+DB_PASSWORD=your_secure_password
+DB_NAME=mining_farm
+
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# Worker Script Configuration
+WALLET_ADDRESS=your_wallet_address
+POOL_URL=57.129.39.84:443
+XMRIG_VERSION=6.20.0
+```
+
 ### **Database Setup**
 
 ```sql
@@ -159,37 +191,22 @@ GRANT ALL PRIVILEGES ON mining_farm.* TO 'mining_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-### **Central Server Configuration**
+### **Telegram Bot Setup**
 
-Edit `central_server.py`:
+1. **Create Bot:**
+   - Message [@BotFather](https://t.me/botfather) on Telegram
+   - Use `/newbot` command
+   - Copy the bot token
 
-```python
-conn = mysql.connector.connect(
-    host="localhost",
-    user="mining_user",
-    password="your_password",  # Use environment variables in production!
-    database="mining_farm"
-)
-```
+2. **Get Chat ID:**
+   - Message [@userinfobot](https://t.me/userinfobot)
+   - Copy your Chat ID
 
-### **Telegram Bot Configuration**
-
-Edit `telegram_bot.py`:
-
-```python
-TOKEN = "YOUR_BOT_TOKEN"  # Get from @BotFather
-CHAT_ID = "YOUR_CHAT_ID"  # Get from @userinfobot
-CENTRAL_SERVER_URL = "http://YOUR_SERVER_IP:5000"
-```
-
-### **Worker Script Configuration**
-
-Edit `worker_script.py`:
-
-```python
-central_server_url = "http://YOUR_SERVER_IP:5000"
-wallet_address = "YOUR_WALLET_ADDRESS"
-```
+3. **Add to `.env`:**
+   ```env
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_CHAT_ID=your_chat_id_here
+   ```
 
 ---
 
@@ -198,6 +215,7 @@ wallet_address = "YOUR_WALLET_ADDRESS"
 ### **Starting the Central Server**
 
 ```bash
+# Make sure .env file is configured
 python central_server.py
 # Server runs on http://0.0.0.0:5002
 ```
@@ -207,6 +225,7 @@ python central_server.py
 On each mining machine:
 
 ```bash
+# Make sure .env file is configured with WALLET_ADDRESS
 python worker_script.py
 # Automatically installs XMRig and starts mining
 ```
@@ -216,6 +235,12 @@ python worker_script.py
 Send messages to your Telegram bot:
 - `summary` - Get farm summary
 - `details` - Get detailed server information
+
+Or run from command line:
+```bash
+python telegram_bot.py summary
+python telegram_bot.py details
+```
 
 ---
 
@@ -227,7 +252,9 @@ mining-farm-project/
 ├── 📄 worker_script.py        # Mining worker script
 ├── 📄 telegram_bot.py         # Telegram notification bot
 ├── 📄 requirements.txt        # Python dependencies
-├── 📖 README.md              # This file
+├── 📄 .env.example            # Environment variables template
+├── 📄 .gitignore              # Git ignore file
+├── 📖 README.md               # This file
 └── 📁 docs/                  # Additional documentation
     ├── SERVER_SETUP.md
     ├── DEPLOY_INSTRUCTIONS.md
@@ -240,6 +267,7 @@ mining-farm-project/
 
 ### **Central Server API**
 
+- `GET /health` - Health check endpoint
 - `POST /add_or_update_server` - Add/update worker server
 - `GET /get_servers` - Get all servers
 - `GET /get_summary` - Get farm summary
@@ -247,6 +275,9 @@ mining-farm-project/
 ### **Example Usage**
 
 ```bash
+# Health check
+curl http://YOUR_SERVER:5002/health
+
 # Get farm summary
 curl http://YOUR_SERVER:5002/get_summary
 
@@ -270,30 +301,23 @@ Based on Intel Xeon E3-1275 v5 (4 cores / 8 threads @ 3.6 GHz):
 
 ---
 
-## 🔒 Security Recommendations
+## 🔒 Security
 
-⚠️ **Important:** Before production deployment:
+### **Best Practices**
 
-1. **Use Environment Variables:**
-```bash
-export MYSQL_PASSWORD="your_password"
-export TELEGRAM_TOKEN="your_token"
-export WALLET_ADDRESS="your_wallet"
-```
+✅ **Environment Variables** - All sensitive data is stored in `.env` file  
+✅ **Git Ignore** - `.env` file is excluded from version control  
+✅ **No Hardcoded Secrets** - All credentials use environment variables  
+✅ **Error Handling** - Comprehensive error handling and logging  
 
-2. **Never Commit Secrets:**
-Add to `.gitignore`:
-```
-.env
-*.log
-config.local.json
-```
+### **Security Checklist**
 
-3. **Update Code to Use Environment Variables:**
-```python
-import os
-password = os.getenv('MYSQL_PASSWORD')
-```
+- [ ] Change default database password
+- [ ] Use strong passwords for all services
+- [ ] Keep `.env` file secure and never commit it
+- [ ] Regularly update dependencies
+- [ ] Use firewall rules to restrict access
+- [ ] Monitor logs for suspicious activity
 
 ---
 
@@ -316,10 +340,23 @@ tail -f worker_script.log
 
 ```bash
 # Verify central server is running
-curl http://YOUR_SERVER:5002/get_summary
+curl http://YOUR_SERVER:5002/health
 
 # Check firewall
 sudo ufw allow 5002
+
+# Check environment variables
+cat .env
+```
+
+### **Database Connection Errors**
+
+```bash
+# Test MySQL connection
+mysql -u mining_user -p mining_farm
+
+# Check if database exists
+mysql -u root -p -e "SHOW DATABASES;"
 ```
 
 ### **Low Hashrate**
